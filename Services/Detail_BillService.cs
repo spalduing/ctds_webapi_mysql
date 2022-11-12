@@ -12,43 +12,67 @@ public class Detail_BillService : IDetail_BillService
         context = dbContext;
     }
 
+    private void throwNotFoundException(Detail_Bill detailBill, Guid id)
+    {
+        if (detailBill == null)
+        {
+            Exception ex = new Exception($"Detail_Bill with id:{id} cannot be found");
+            throw ex;
+        }
+    }
+
     public IEnumerable<Detail_Bill> Get()
     {
         return context.Detail_Bills;
     }
 
-    public async Task Save(Detail_Bill detail_bill)
+    public Detail_Bill GetById(Guid id)
     {
-        context.Detail_Bills.Add(detail_bill);
+        // Detail_Bill detailBill = context.Detail_Bills.Find(id);
+        Detail_Bill detailBill = context.Detail_Bills
+                                .Include(dBill => dBill.Manager)
+                                .Include(dBil => dBil.Bill).Where(dBill => dBill.DetailBilId.Equals(id))
+                                .FirstOrDefault();
+
+        throwNotFoundException(detailBill, id);
+
+        return detailBill;
+    }
+
+    public async Task Save(Detail_Bill detailBill)
+    {
+        context.Detail_Bills.Add(detailBill);
 
         await context.SaveChangesAsync();
     }
 
-    public async Task Update(Guid id, Detail_Bill detail_bill)
+    public async Task Update(Guid id, Detail_Bill detailBill)
     {
-        var detail_billToUpdate = context.Detail_Bills.Find(id);
+        var detailBillToUpdate = context.Detail_Bills.Find(id);
+        throwNotFoundException(detailBillToUpdate, id);
 
-        if(detail_billToUpdate != null)
-        {
-            await context.SaveChangesAsync();
-        }
+        detailBillToUpdate.BillId = detailBill.BillId;
+        detailBillToUpdate.ManagerId = detailBill.ManagerId;
+        detailBillToUpdate.Dish = detailBill.Dish;
+        detailBillToUpdate.Value = detailBill.Value;
+
+        await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        var detail_billToDelete = context.Detail_Bills.Find(id);
+        var detailBillToDelete = context.Detail_Bills.Find(id);
+        throwNotFoundException(detailBillToDelete, id);
 
-        if(detail_billToDelete !=null){
-            context.Detail_Bills.Remove(detail_billToDelete);
+        context.Detail_Bills.Remove(detailBillToDelete);
 
-            await context.SaveChangesAsync();
-        }
+        await context.SaveChangesAsync();
+
     }
 
     public BestSellerProduct BestSellerProduct()
     {
         var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" GROUP BY \"d\".\"Dish\" ORDER BY count(\"d\".\"Dish\") DESC;");
-        // Console.WriteLine($"###BEST_SELLER_PRODUCT => {BEST_SELLER_PRODUCT.Dish} | {BEST_SELLER_PRODUCT.Amount} | {BEST_SELLER_PRODUCT.TotalBilled}");
 
         return BEST_SELLER_PRODUCT.ToList().ElementAt(0);
     }
@@ -57,8 +81,9 @@ public class Detail_BillService : IDetail_BillService
 public interface IDetail_BillService
 {
     IEnumerable<Detail_Bill> Get();
-    Task Save(Detail_Bill detail_bill);
-    Task Update(Guid id, Detail_Bill detail_bill);
+    Detail_Bill GetById(Guid id);
+    Task Save(Detail_Bill detailBill);
+    Task Update(Guid id, Detail_Bill detailBill);
     Task Delete(Guid id);
     BestSellerProduct BestSellerProduct();
 }

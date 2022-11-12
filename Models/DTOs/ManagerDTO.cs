@@ -18,6 +18,11 @@ public class CreateManagerDTO
 
 }
 
+public class UpdateManagerDTO : CreateManagerDTO
+{
+
+}
+
 public class ManagerDTO : CreateManagerDTO
 {
     public Guid Id {get;set;}

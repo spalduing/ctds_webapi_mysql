@@ -16,6 +16,11 @@ public class CreateWaiterDTO
 
 }
 
+public class UpdateWaiterDTO : CreateWaiterDTO
+{
+
+}
+
 public class WaiterDTO : CreateWaiterDTO
 {
     public Guid Id {get;set;}

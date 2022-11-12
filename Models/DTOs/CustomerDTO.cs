@@ -15,6 +15,11 @@ public class CreateCustomerDTO
 
 }
 
+public class UpdateCustomerDTO : CreateCustomerDTO
+{
+
+}
+
 public class CustomerDTO : CreateCustomerDTO
 {
     public Guid Id {get;set;}

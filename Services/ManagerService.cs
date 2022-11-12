@@ -12,11 +12,27 @@ public class ManagerService : IManagerService
         context = dbContext;
     }
 
+    private void throwNotFoundException(Manager manager, Guid id)
+    {
+        if (manager == null)
+        {
+            Exception ex = new Exception($"Manager with id:{id} cannot be found");
+            throw ex;
+        }
+    }
+
     public IEnumerable<Manager> Get()
     {
         return context.Managers;
     }
 
+    public Manager GetById(Guid id)
+    {
+            Manager manager = context.Managers.Find(id);
+            throwNotFoundException(manager, id);
+
+            return manager;
+    }
     public async Task Save(Manager manager)
     {
         context.Managers.Add(manager);
@@ -28,7 +44,7 @@ public class ManagerService : IManagerService
     {
         var managerToUpdate = context.Managers.Find(id);
 
-        if(managerToUpdate != null)
+        if (managerToUpdate != null)
         {
             managerToUpdate.Name = manager.Name;
             managerToUpdate.LastName = manager.LastName;
@@ -43,7 +59,8 @@ public class ManagerService : IManagerService
     {
         var managerToDelete = context.Managers.Find(id);
 
-        if(managerToDelete !=null){
+        if (managerToDelete != null)
+        {
             context.Managers.Remove(managerToDelete);
 
             await context.SaveChangesAsync();
@@ -54,6 +71,7 @@ public class ManagerService : IManagerService
 public interface IManagerService
 {
     IEnumerable<Manager> Get();
+    Manager GetById(Guid id);
     Task Save(Manager manager);
     Task Update(Guid id, Manager manager);
     Task Delete(Guid id);

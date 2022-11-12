@@ -11,6 +11,11 @@ public class CreateBillDTO
     public ICollection<CreateDetail_BillDTO> Detail_Bills {get;set;}
 }
 
+public class UpdateBillDTO : CreateBillDTO
+{
+
+}
+
 public class BillDTO : CreateBillDTO
 {
     public Guid BillId {get;set;}
@@ -20,7 +25,7 @@ public class BillDTO : CreateBillDTO
 
     public WaiterDTO Waiter {get;set;}
 
-    // [JsonIgnore]
-    // public ICollection<Detail_BillDTO> Detail_Bills {get;set;}
+    [JsonIgnore]
+    public ICollection<Detail_BillDTO> Detail_Bills {get;set;}
 
 }

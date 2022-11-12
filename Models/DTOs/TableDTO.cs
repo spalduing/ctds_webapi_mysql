@@ -13,6 +13,11 @@ public class CreateTableDTO
 
 }
 
+public class UpdateTableDTO : CreateTableDTO
+{
+
+}
+
 public class TableDTO : CreateTableDTO
 {
     public Guid TableId {get;set;}

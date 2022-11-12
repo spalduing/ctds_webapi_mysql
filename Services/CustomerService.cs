@@ -12,11 +12,27 @@ public class CustomerService : ICustomerService
         context = dbContext;
     }
 
+    private void throwNotFoundException(Customer customer, Guid id)
+    {
+        if (customer == null)
+        {
+            Exception ex = new Exception($"Customer with id:{id} cannot be found");
+            throw ex;
+        }
+    }
+
     public IEnumerable<Customer> Get()
     {
         return context.Customers;
     }
 
+    public Customer GetById(Guid id)
+    {
+        Customer customer = context.Customers.Find(id);
+        throwNotFoundException(customer, id);
+
+        return customer;
+    }
     public async Task Save(Customer customer)
     {
         context.Customers.Add(customer);
@@ -26,35 +42,25 @@ public class CustomerService : ICustomerService
     public async Task Update(Guid id, Customer customer)
     {
         var customerToUpdate = context.Customers.Find(id);
+        throwNotFoundException(customerToUpdate, id);
 
-        if (customerToUpdate != null)
-        {
-            customerToUpdate.Name = customer.Name;
-            customerToUpdate.LastName = customer.LastName;
-            customerToUpdate.Address = customer.Address;
-            customerToUpdate.Cellphone = customer.Cellphone;
+        customerToUpdate.Name = customer.Name;
+        customerToUpdate.LastName = customer.LastName;
+        customerToUpdate.Address = customer.Address;
+        customerToUpdate.Cellphone = customer.Cellphone;
 
-            await context.SaveChangesAsync();
-        }
+        await context.SaveChangesAsync();
+
     }
 
     public async Task Delete(Guid id)
     {
         var customerToDelete = context.Customers.Find(id);
+        throwNotFoundException(customerToDelete, id);
 
-        if (customerToDelete != null)
-        {
-            context.Customers.Remove(customerToDelete);
+        context.Customers.Remove(customerToDelete);
 
-            await context.SaveChangesAsync();
-        }
-    }
-
-    public IEnumerable<Waiter> TotalSellsByWaiter()
-    {
-        var waiters = context.Waiters.Where(p => p.Seniority == Seniority.Junior).ToList<Waiter>();
-        return waiters;
-
+        await context.SaveChangesAsync();
     }
 
     public IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue)
@@ -69,6 +75,7 @@ public class CustomerService : ICustomerService
 public interface ICustomerService
 {
     IEnumerable<Customer> Get();
+    Customer GetById(Guid id);
     Task Save(Customer customer);
     Task Update(Guid id, Customer customer);
     Task Delete(Guid id);

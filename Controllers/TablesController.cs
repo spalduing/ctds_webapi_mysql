@@ -9,17 +9,17 @@ namespace ctds_webapi.Controllers;
 [ApiController]
 [Route("[controller]")]
 
-public class BillsController : ControllerBase
+public class TablesController : ControllerBase
 {
-    IBillService billService;
+    ITableService tableService;
 
     IMapper mapper;
 
-    private readonly ILogger<BillsController> _logger;
+    private readonly ILogger<TablesController> _logger;
 
-    public BillsController(IBillService service, IMapper _mapper, ILogger<BillsController> logger)
+    public TablesController(ITableService service, IMapper _mapper, ILogger<TablesController> logger)
     {
-        billService = service;
+        tableService = service;
         mapper = _mapper;
         _logger = logger;
     }
@@ -30,9 +30,9 @@ public class BillsController : ControllerBase
     {
         try
         {
-            var results = billService.Get();
-            var bills = mapper.Map<IEnumerable<BillDTO>>(results);
-            return Ok(bills);
+            var results = tableService.Get();
+            var tables = mapper.Map<IEnumerable<TableDTO>>(results);
+            return Ok(tables);
         }
         catch (Exception ex)
         {
@@ -41,35 +41,19 @@ public class BillsController : ControllerBase
         }
 
     }
-    [HttpGet("{id:Guid}", Name = "GetBill")]
-    public IActionResult GetBill([FromRoute] Guid id)
+
+    [HttpGet("{id:Guid}", Name = "GetTable")]
+    public IActionResult GetTable([FromRoute] Guid id)
     {
         try
         {
-            var result = billService.GetById(id);
-            var bill = mapper.Map<BillDTO>(result);
-            return Ok(bill);
+            var result = tableService.GetById(id);
+            var table = mapper.Map<TableDTO>(result);
+            return Ok(table);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Invalid GetById attempt in {nameof(GetBill)} => [{ex}]");
-            return StatusCode(500, "Internal Server Error. Please Try Again Later");
-        }
-
-    }
-
-    [HttpPost("registerBill")]
-    public async Task<IActionResult> RegisterBill([FromBody] CreateBillDTO billDTO)
-    {
-        try
-        {
-            var bill = mapper.Map<Bill>(billDTO);
-            billService.RegisterBill(bill);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Invalid POST attempt in {nameof(RegisterBill)} => [{ex}]");
+            _logger.LogError($"Invalid GetById attempt in {nameof(GetTable)} => [{ex}]");
             return StatusCode(500, "Internal Server Error. Please Try Again Later");
         }
 
@@ -77,7 +61,7 @@ public class BillsController : ControllerBase
 
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CreateBillDTO billDTO)
+    public async Task<IActionResult> Post([FromBody] CreateTableDTO tableDTO)
     {
         try
         {
@@ -86,10 +70,10 @@ public class BillsController : ControllerBase
                 _logger.LogError($"Invalid POST attempt in {nameof(Post)} => [Invalid ModelState: {ModelState}]");
                 return BadRequest(ModelState);
             }
-            Bill bill = mapper.Map<Bill>(billDTO);
-            await billService.Save(bill);
+            Table table = mapper.Map<Table>(tableDTO);
+            await tableService.Save(table);
 
-            return CreatedAtRoute(nameof(GetBill), new { id = bill.BillId }, bill);
+            return CreatedAtRoute(nameof(GetTable), new { id = table.TableId }, table);
         }
         catch (Exception ex)
         {
@@ -100,7 +84,7 @@ public class BillsController : ControllerBase
     }
 
     [HttpPut("{id:Guid}")]
-    public IActionResult Put([FromRoute] Guid id, [FromBody] UpdateBillDTO billDTO)
+    public IActionResult Put([FromRoute] Guid id, [FromBody] UpdateTableDTO tableDTO)
     {
         try
         {
@@ -110,8 +94,8 @@ public class BillsController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            Bill bill = mapper.Map<Bill>(billDTO);
-            billService.Update(id, bill);
+            Table table = mapper.Map<Table>(tableDTO);
+            tableService.Update(id, table);
             return Ok();
         }
         catch (Exception ex)
@@ -128,7 +112,7 @@ public class BillsController : ControllerBase
 
         try
         {
-            billService.Delete(id);
+            tableService.Delete(id);
             return Ok();
         }
         catch (Exception ex)
@@ -139,4 +123,3 @@ public class BillsController : ControllerBase
 
     }
 }
-

@@ -17,6 +17,11 @@ public class CreateDetail_BillDTO
     public double Value {get;set;}
 }
 
+public class UpdateDetail_BillDTO : CreateDetail_BillDTO
+{
+
+}
+
 public class Detail_BillDTO : CreateDetail_BillDTO
 {
     public Guid DetailBilId {get;set;}

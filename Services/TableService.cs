@@ -12,13 +12,31 @@ public class TableService : ITableService
         context = dbContext;
     }
 
+    private void throwNotFoundException(Table table, Guid id)
+    {
+        if (table == null)
+        {
+            Exception ex = new Exception($"Table with id:{id} cannot be found");
+            throw ex;
+        }
+    }
+
     public IEnumerable<Table> Get()
     {
         return context.Tables;
     }
 
+    public Table GetById(Guid id)
+    {
+            Table table = context.Tables.Find(id);
+            throwNotFoundException(table, id);
+
+            return table;
+    }
+
     public async Task Save(Table table)
     {
+        table.TableId = Guid.NewGuid();
         context.Tables.Add(table);
 
         await context.SaveChangesAsync();
@@ -26,33 +44,30 @@ public class TableService : ITableService
 
     public async Task Update(Guid id, Table table)
     {
-        var managerToUpdate = context.Tables.Find(id);
+        var tableToUpdate = context.Tables.Find(id);
+        throwNotFoundException(tableToUpdate, id);
 
-        if(managerToUpdate != null)
-        {
-            managerToUpdate.Name = table.Name;
-            managerToUpdate.Reserved = table.Reserved;
-            managerToUpdate.Stalls = table.Stalls;
+        tableToUpdate.Name = table.Name;
+        tableToUpdate.Reserved = table.Reserved;
+        tableToUpdate.Stalls = table.Stalls;
 
-            await context.SaveChangesAsync();
-        }
+        await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        var managerToDelete = context.Tables.Find(id);
+        var tableToDelete = context.Tables.Find(id);
+        throwNotFoundException(tableToDelete, id);
+        context.Tables.Remove(tableToDelete);
 
-        if(managerToDelete !=null){
-            context.Tables.Remove(managerToDelete);
-
-            await context.SaveChangesAsync();
-        }
+        await context.SaveChangesAsync();
     }
 }
 
 public interface ITableService
 {
     IEnumerable<Table> Get();
+    Table GetById(Guid id);
     Task Save(Table table);
     Task Update(Guid id, Table table);
     Task Delete(Guid id);
