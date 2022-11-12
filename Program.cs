@@ -15,14 +15,21 @@ builder.Services.AddSwaggerGen();
     var services = builder.Services;
 
     services.AddCors( o =>{
-        o.AddPolicy("AllowAll", builder =>
+        var ctds_webapp_url = builder.Configuration["ConnectionStrings:ctds_webapp_url"];
+
+        o.AddPolicy("allow_all", builder =>
             builder.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+        );
+
+        o.AddPolicy("allow_ctds_webapp", builder =>
+            builder.WithOrigins(ctds_webapp_url)
             .AllowAnyMethod()
             .AllowAnyHeader()
         );
     });
     services.AddAutoMapper(typeof(MapperInitializer));
-    // services.AddMvc();
 
     var connectionString = builder.Configuration["ConnectionStrings:WebApiDatabase"];
 
@@ -49,10 +56,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+app.UseCors("allow_ctds_webapp");
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run("https://localhost:3000");
+app.Run("https://localhost:5001");
