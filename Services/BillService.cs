@@ -22,7 +22,10 @@ public class BillService : IBillService
 
     public IEnumerable<Bill> Get()
     {
-        return context.Bills;
+        return context.Bills
+                .Include(bill => bill.Customer)
+                .Include(bill => bill.Waiter)
+                .Include(bill => bill.Table);
     }
 
     public Bill GetById(Guid id)

@@ -65,7 +65,8 @@ public class BillsController : ControllerBase
         {
             var bill = mapper.Map<Bill>(billDTO);
             billService.RegisterBill(bill);
-            return Ok();
+            // return Ok();
+            return CreatedAtRoute(nameof(GetBill), new { id = bill.BillId }, bill);
         }
         catch (Exception ex)
         {
