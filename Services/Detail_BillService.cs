@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
+using System.Globalization;
 
 namespace ctds_webapi.Services;
 
@@ -70,10 +71,19 @@ public class Detail_BillService : IDetail_BillService
 
     }
 
-    public BestSellerProduct BestSellerProduct()
+    public BestSellerProduct BestSellerProduct(DateTime startDate, DateTime endDate)
     {
-        var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" GROUP BY \"d\".\"Dish\" ORDER BY count(\"d\".\"Dish\") DESC;");
+        DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
+        var start_str = startDate.ToString("d", dtfi);
+        var end_str = endDate.ToString("d", dtfi);
 
+        Console.WriteLine(start_str);
+        Console.WriteLine(end_str);
+
+        var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", \"b\".\"CreatedAt\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" INNER JOIN \"Bill\" \"b\" ON \"d\".\"BillId\" = \"b\".\"BillId\" GROUP BY \"d\".\"Dish\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')) ORDER BY count(\"d\".\"Dish\") DESC;");
+        // var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" GROUP BY \"d\".\"Dish\" ORDER BY count(\"d\".\"Dish\") DESC;");
+        // var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled, \"b\".\"CreatedAt\" FROM \"Detail_Bill\" \"d\" INNER JOIN \"Bill\" \"b\" ON \"d\".\"BillId\" = \"b\".\"BillId\" GROUP BY \"d\".\"Dish\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')) ORDER BY count(\"d\".\"Dish\") DESC;");
+        // SELECT "d"."Dish", "b"."CreatedAt", count("d"."Dish") AS Amount, sum("d"."Value") AS TotalBilled FROM "Detail_Bill" "d" INNER JOIN "Bill" "b" ON "d"."BillId" = "b"."BillId" GROUP BY "d"."Dish", "b"."CreatedAt" HAVING ("b"."CreatedAt" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND "b"."CreatedAt" <= TO_DATE('2022/11/14','YYYY/MM/DD')) ORDER BY count("d"."Dish") DESC;
         return BEST_SELLER_PRODUCT.ToList().ElementAt(0);
     }
 }
@@ -85,5 +95,5 @@ public interface IDetail_BillService
     Task Save(Detail_Bill detailBill);
     Task Update(Guid id, Detail_Bill detailBill);
     Task Delete(Guid id);
-    BestSellerProduct BestSellerProduct();
+    BestSellerProduct BestSellerProduct(DateTime startDate, DateTime endDate);
 }

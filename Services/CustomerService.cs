@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
+using System.Globalization;
 
 namespace ctds_webapi.Services;
 
@@ -63,10 +64,16 @@ public class CustomerService : ICustomerService
         await context.SaveChangesAsync();
     }
 
-    public IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue)
+    public IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate)
     {
-        var CUSTOMERS_CONSUMPTION_BY_VALUE = context.CustomerConsumptionsByValue.FromSqlInterpolated($"SELECT \"c\".\"Name\", \"c\".\"LastName\", sum(\"dBill\".\"Value\") AS CustomerConsumption FROM \"Customer\" \"c\" INNER JOIN \"Bill\" \"b\" ON \"c\".\"Id\" = \"b\".\"CustomerId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"c\".\"Id\", \"c\".\"Name\", \"c\".\"LastName\" HAVING sum(\"dBill\".\"Value\") >= {givenValue} ORDER BY sum(\"dBill\".\"Value\") DESC;");
+        DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
+        var start_str = startDate.ToString("d", dtfi);
+        var end_str = endDate.ToString("d", dtfi);
 
+        // var CUSTOMERS_CONSUMPTION_BY_VALUE = context.CustomerConsumptionsByValue.FromSqlInterpolated($"SELECT \"c\".\"Name\", \"c\".\"LastName\", sum(\"dBill\".\"Value\") AS CustomerConsumption FROM \"Customer\" \"c\" INNER JOIN \"Bill\" \"b\" ON \"c\".\"Id\" = \"b\".\"CustomerId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"c\".\"Id\", \"c\".\"Name\", \"c\".\"LastName\" HAVING sum(\"dBill\".\"Value\") >= {givenValue} ORDER BY sum(\"dBill\".\"Value\") DESC;");
+        var CUSTOMERS_CONSUMPTION_BY_VALUE = context.CustomerConsumptionsByValue.FromSqlInterpolated($"SELECT \"c\".\"Name\", \"c\".\"LastName\", \"b\".\"CreatedAt\", sum(\"dBill\".\"Value\") AS CustomerConsumption FROM \"Customer\" \"c\" INNER JOIN \"Bill\" \"b\" ON \"c\".\"Id\" = \"b\".\"CustomerId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"c\".\"Id\", \"c\".\"Name\", \"c\".\"LastName\", \"b\".\"CreatedAt\" HAVING (sum(\"dBill\".\"Value\") >= {givenValue} AND (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')))  ORDER BY sum(\"dBill\".\"Value\") DESC;");
+        // SELECT "c"."Name", "c"."LastName", "b"."CreatedAt", sum("dBill"."Value") AS CustomerConsumption FROM "Customer" "c" INNER JOIN "Bill" "b" ON "c"."Id" = "b"."CustomerId" INNER JOIN "Detail_Bill" "dBill" ON "b"."BillId" = "dBill"."BillId" GROUP BY "c"."Id", "c"."Name", "c"."LastName", "b"."CreatedAt" HAVING sum("dBill"."Value") >= 4.4 ORDER BY sum("dBill"."Value") DESC;
+        // SELECT "c"."Name", "c"."LastName", "b"."CreatedAt", sum("dBill"."Value") AS CustomerConsumption FROM "Customer" "c" INNER JOIN "Bill" "b" ON "c"."Id" = "b"."CustomerId" INNER JOIN "Detail_Bill" "dBill" ON "b"."BillId" = "dBill"."BillId" GROUP BY "c"."Id", "c"."Name", "c"."LastName", "b"."CreatedAt" HAVING (sum("dBill"."Value") >= 4.4 AND ("b"."CreatedAt" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND "b"."CreatedAt" <= TO_DATE('2022/11/14','YYYY/MM/DD'))) ORDER BY sum("dBill"."Value") DESC;
         return CUSTOMERS_CONSUMPTION_BY_VALUE.ToList();
     }
 
@@ -79,7 +86,7 @@ public interface ICustomerService
     Task Save(Customer customer);
     Task Update(Guid id, Customer customer);
     Task Delete(Guid id);
-    IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue);
+    IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate);
 }
 
 

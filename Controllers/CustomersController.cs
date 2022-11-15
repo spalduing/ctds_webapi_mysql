@@ -59,11 +59,22 @@ public class CustomersController : ControllerBase
     }
 
     [HttpGet("consumptions")]
-    public IActionResult Consumptions([FromQuery] double givenValue)
+    public IActionResult Consumptions([FromQuery] double givenValue, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         try
         {
-            return Ok(customerService.CustomersConsumptions(givenValue));
+            var startQueryParam = Request.Query["startDate"];
+            var endQueryParam = Request.Query["endDate"];
+            // IMPORTANT_COMMENT: IF NO QUERY PARAMS FOR DATE RANGE IS PROVIDED,
+            // IT RETURNS A DEFAULT RANGE FROM THE FIRST DAY OF THE CURRENT YEAR TO NOW
+            if( string.IsNullOrEmpty(startQueryParam)  ||  string.IsNullOrEmpty(endQueryParam))
+            {
+                Console.WriteLine("###NULL_FROM_CUSTOMERS_CONSUMTION");
+            DateTime now = DateTime.Now;
+            startDate = new DateTime(now.Year, 1, 1);
+            endDate = new DateTime(now.Year, now.Month, now.Day);
+            }
+            return Ok(customerService.CustomersConsumptions(givenValue, startDate, endDate));
         }
         catch (Exception ex)
         {
