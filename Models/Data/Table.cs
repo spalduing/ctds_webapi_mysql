@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace ctds_webapi.Models;
 
-public class Table
+public class Table : Auditable
 {
     public Guid TableId {get;set;}
     public string Name {get;set;}

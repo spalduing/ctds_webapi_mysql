@@ -59,7 +59,7 @@ public class WaitersController : ControllerBase
     }
 
     [HttpGet("totalSells")]
-    public IActionResult TotalSells([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    public async Task<IActionResult> TotalSells([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         try
         {
@@ -73,7 +73,8 @@ public class WaitersController : ControllerBase
             startDate = new DateTime(now.Year, 1, 1);
             endDate = new DateTime(now.Year, now.Month, now.Day);
             }
-            return Ok(waiterService.TotalSells(startDate, endDate));
+            var waitersTotalSells = await waiterService.TotalSells(startDate, endDate);
+            return Ok(waitersTotalSells);
         }
         catch (Exception ex)
         {

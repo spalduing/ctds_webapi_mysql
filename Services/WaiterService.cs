@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
 using System.Globalization;
+using System.Collections;
 
 namespace ctds_webapi.Services;
 
@@ -65,23 +66,28 @@ public class WaiterService : IWaiterService
         await context.SaveChangesAsync();
     }
 
-    public IEnumerable<TotalSellsByWaiter> TotalSells(DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable> TotalSells(DateTime startDate, DateTime endDate)
     {
-        DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
-        var start_str = startDate.ToString("d", dtfi);
-        var end_str = endDate.ToString("d", dtfi);
+        var waiters = context.Waiters;
+        var bills = context.Bills;
+        var detailBills = context.Detail_Bills;
 
-        Console.WriteLine(start_str);
-        Console.WriteLine(end_str);
+        var waitersConsumptionsQuery = await waiters
+        .Join(bills, w => w.Id, b => b.WaiterId, (w, b) => new { w, b })
+        .Join(detailBills, bdb => bdb.b.BillId, dB => dB.BillId, (bdb, dB) => new { bdb, dB })
+        .Where(res => res.bdb.b.CreatedAt.Date >= startDate.Date && res.bdb.b.CreatedAt.Date <= endDate.Date)
+        .GroupBy(res => new { res.bdb.w.Name, res.bdb.w.LastName, res.bdb.b.CreatedAt })
+        .Select(res => new
+        {
+            res.Key.Name,
+            res.Key.LastName,
+            res.Key.CreatedAt,
+            WaiterSells = res.Select(x => x.dB.Value).Sum()
+        })
+        .OrderByDescending(x => x.WaiterSells)
+        .ToListAsync();
 
-
-        var TOTAL_SELLS_BY_WAITER = context.TotalSellsByWaiter.FromSqlInterpolated($"SELECT \"w\".\"Name\", \"w\".\"LastName\", sum(\"dBill\".\"Value\") AS WaiterSells FROM \"Waiter\" \"w\" INNER JOIN \"Bill\" \"b\" ON \"w\".\"Id\" = \"b\".\"WaiterId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"w\".\"Name\", \"w\".\"LastName\" ORDER BY sum(\"dBill\".\"Value\") DESC;");
-        // var TOTAL_SELLS_BY_WAITER = context.TotalSellsByWaiter.FromSqlInterpolated($"SELECT \"w\".\"Name\", \"w\".\"LastName\", \"b\".\"CreatedAt\", sum(\"dBill\".\"Value\") AS WaiterSells FROM \"Waiter\" \"w\" INNER JOIN \"Bill\" \"b\" ON \"w\".\"Id\" = \"b\".\"WaiterId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"w\".\"Name\", \"w\".\"LastName\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')) ORDER BY sum(\"dBill\".\"Value\") DESC;");
-
-        // var TOTAL_SELLS_BY_WAITER = context.TotalSellsByWaiter.FromSqlInterpolated($"SELECT \"w\".\"Name\", \"w\".\"LastName\", \"b\".\"CreatedAt\", sum(\"dBill\".\"Value\") AS WaiterSells FROM \"Waiter\" \"w\" INNER JOIN \"Bill\" \"b\" ON \"w\".\"Id\" = \"b\".\"WaiterId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"w\".\"Name\", \"w\".\"LastName\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE('2022/11/14','YYYY/MM/DD')) ORDER BY sum(\"dBill\".\"Value\") DESC;");
-        // FIRST_ONE  // SELECT \"w\".\"Name\", \"w\".\"LastName\", sum(\"dBill\".\"Value\") AS WaiterSells FROM \"Waiter\" \"w\" INNER JOIN \"Bill\" \"b\" ON \"w\".\"Id\" = \"b\".\"WaiterId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"w\".\"Name\", \"w\".\"LastName\" HAVING (\"b\".\"CreatedAt\" >= {startDate} && \"b\".\"CreatedAt\" <= {endDate}) ORDER BY sum(\"dBill\".\"Value\") DESC;
-        // LAST_ONE  // SELECT "w"."Name", "w"."LastName", "b"."CreatedAt", sum("dBill"."Value") AS WaiterSells FROM "Waiter" "w" INNER JOIN "Bill" "b" ON "w"."Id" = "b"."WaiterId" INNER JOIN "Detail_Bill" "dBill" ON "b"."BillId" = "dBill"."BillId" GROUP BY "w"."Name", "w"."LastName", "b"."CreatedAt" HAVING ("b"."CreatedAt" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND "b"."CreatedAt" <= TO_DATE('2022/11/14','YYYY/MM/DD')) ORDER BY sum("dBill"."Value") DESC;
-        return TOTAL_SELLS_BY_WAITER.ToList();
+        return waitersConsumptionsQuery;
     }
 }
 
@@ -92,6 +98,6 @@ public interface IWaiterService
     Task Save(Waiter waiter);
     Task Update(Guid id, Waiter waiter);
     Task Delete(Guid id);
-    IEnumerable<TotalSellsByWaiter> TotalSells(DateTime startDate, DateTime endDate);
+    Task<IEnumerable> TotalSells(DateTime startDate, DateTime endDate);
 
 }

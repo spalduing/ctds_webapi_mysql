@@ -1,7 +1,6 @@
 using ctds_webapi;
 using ctds_webapi.Services;
 using Microsoft.EntityFrameworkCore;
-using Oracle.ManagedDataAccess.Client;
 using AutoMapper;
 using ctds_webapi.Configurations;
 
@@ -14,7 +13,8 @@ builder.Services.AddSwaggerGen();
 {
     var services = builder.Services;
 
-    services.AddCors( o =>{
+    services.AddCors(o =>
+    {
         var ctds_webapp_url = builder.Configuration["ConnectionStrings:ctds_webapp_url"];
 
         o.AddPolicy("allow_all", builder =>
@@ -32,13 +32,16 @@ builder.Services.AddSwaggerGen();
     services.AddAutoMapper(typeof(MapperInitializer));
 
     var connectionString = builder.Configuration["ConnectionStrings:WebApiDatabase"];
+    var serverVersion = new MySqlServerVersion(new Version(5, 7, 33));
 
     services.AddDbContext<OracleDBContext>(
         dbContextOptions => dbContextOptions
-            .UseOracle(connectionString)
+            .UseMySql(connectionString, serverVersion)
+            .LogTo(Console.WriteLine, LogLevel.Information)
+            .EnableSensitiveDataLogging()
+            .EnableDetailedErrors()
     );
 }
-
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IWaiterService, WaiterService>();
 builder.Services.AddScoped<IManagerService, ManagerService>();
@@ -56,10 +59,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("allow_ctds_webapp");
+app.UseCors("allow_all");
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run("https://localhost:5001");
+
+if (app.Environment.IsDevelopment())
+{
+    app.Run("https://localhost:5001");
+}
+else
+{
+    app.Run();
+}

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace ctds_webapi.Models;
 
-public class Detail_Bill
+public class Detail_Bill : Auditable
 {
     public Guid DetailBilId {get;set;}
     public Guid BillId {get;set;}

@@ -20,20 +20,20 @@ public class Bill
     public virtual ICollection<Detail_Bill> Detail_Bills {get;set;}
 
     [JsonIgnore]
-    public double TotalValue {get;set;}
-    // public double TotalValue {
-    //     get{
-    //         double totalVal = 0.0;
-    //         if(Detail_Bills.Any() != false)
-    //         {
-    //             foreach (var detailBill in Detail_Bills)
-    //             {
-    //                 totalVal += detailBill.Value;
-    //             }
-    //         }
-    //         return totalVal;
-    //     }
+    // public double TotalValue {get;set;}
+    public double TotalValue {
+        get{
+            double totalVal = 0.0;
+            if(Detail_Bills.Any() != false)
+            {
+                foreach (var detailBill in Detail_Bills)
+                {
+                    totalVal += detailBill.Value;
+                }
+            }
+            return totalVal;
+        }
 
-    //     set{}
-    // }
+        set{}
+    }
 }

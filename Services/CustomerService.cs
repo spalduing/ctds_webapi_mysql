@@ -2,6 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
 using System.Globalization;
 
+using System;
+using System.Data;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+// using System.Data.Objects;
+using System.Globalization;
+// using System.Data.EntityClient;
+using System.Data.SqlClient;
+using System.Data.Common;
+using System.Collections;
+
 namespace ctds_webapi.Services;
 
 public class CustomerService : ICustomerService
@@ -64,21 +76,34 @@ public class CustomerService : ICustomerService
         await context.SaveChangesAsync();
     }
 
-    public IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate)
     {
-        DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
-        var start_str = startDate.ToString("d", dtfi);
-        var end_str = endDate.ToString("d", dtfi);
+        var customers = context.Customers;
+        var bills = context.Bills;
+        var detailBills = context.Detail_Bills;
 
-        var CUSTOMERS_CONSUMPTION_BY_VALUE = context.CustomerConsumptionsByValue.FromSqlInterpolated($"SELECT \"c\".\"Name\", \"c\".\"LastName\", sum(\"dBill\".\"Value\") AS CustomerConsumption FROM \"Customer\" \"c\" INNER JOIN \"Bill\" \"b\" ON \"c\".\"Id\" = \"b\".\"CustomerId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"c\".\"Id\", \"c\".\"Name\", \"c\".\"LastName\" HAVING sum(\"dBill\".\"Value\") >= {givenValue} ORDER BY sum(\"dBill\".\"Value\") DESC;");
-        // var CUSTOMERS_CONSUMPTION_BY_VALUE = context.CustomerConsumptionsByValue.FromSqlInterpolated($"SELECT \"c\".\"Name\", \"c\".\"LastName\", \"b\".\"CreatedAt\", sum(\"dBill\".\"Value\") AS CustomerConsumption FROM \"Customer\" \"c\" INNER JOIN \"Bill\" \"b\" ON \"c\".\"Id\" = \"b\".\"CustomerId\" INNER JOIN \"Detail_Bill\" \"dBill\" ON \"b\".\"BillId\" = \"dBill\".\"BillId\" GROUP BY \"c\".\"Id\", \"c\".\"Name\", \"c\".\"LastName\", \"b\".\"CreatedAt\" HAVING (sum(\"dBill\".\"Value\") >= {givenValue} AND (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD'))) ORDER BY sum(\"dBill\".\"Value\") DESC;");
+        var customersConsumptionsQuery = await customers
+        .Join(bills, c => c.Id, b => b.CustomerId, (c, b) => new { c, b })
+        .Join(detailBills, bdb => bdb.b.BillId, dB => dB.BillId, (bdb, dB) => new { bdb, dB })
+        .Where(res => res.bdb.b.CreatedAt.Date >= startDate.Date && res.bdb.b.CreatedAt.Date <= endDate.Date)
+        .GroupBy(res => new { res.bdb.c.Name, res.bdb.c.LastName, res.bdb.b.CreatedAt })
+        .Select(res => new
+        {
+            res.Key.Name,
+            res.Key.LastName,
+            res.Key.CreatedAt,
+            CustomerConsumption = res.Select(x => x.dB.Value).Sum()
+        })
+        .Where(res => res.CustomerConsumption >= givenValue )
+        .OrderByDescending(x => x.CustomerConsumption)
+        .ToListAsync();
 
-        // SELECT "c"."Name", "c"."LastName", "b"."CreatedAt", sum("dBill"."Value") AS CustomerConsumption FROM "Customer" "c" INNER JOIN "Bill" "b" ON "c"."Id" = "b"."CustomerId" INNER JOIN "Detail_Bill" "dBill" ON "b"."BillId" = "dBill"."BillId" GROUP BY "c"."Id", "c"."Name", "c"."LastName", "b"."CreatedAt" HAVING sum("dBill"."Value") >= 4.4 ORDER BY sum("dBill"."Value") DESC;
-        // SELECT "c"."Name", "c"."LastName", "b"."CreatedAt", sum("dBill"."Value") AS CustomerConsumption FROM "Customer" "c" INNER JOIN "Bill" "b" ON "c"."Id" = "b"."CustomerId" INNER JOIN "Detail_Bill" "dBill" ON "b"."BillId" = "dBill"."BillId" GROUP BY "c"."Id", "c"."Name", "c"."LastName", "b"."CreatedAt" HAVING (sum("dBill"."Value") >= 4.4 AND ("b"."CreatedAt" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND "b"."CreatedAt" <= TO_DATE('2022/11/14','YYYY/MM/DD'))) ORDER BY sum("dBill"."Value") DESC;
-        return CUSTOMERS_CONSUMPTION_BY_VALUE.ToList();
+        return customersConsumptionsQuery;
     }
 
+
 }
+
 
 public interface ICustomerService
 {
@@ -87,7 +112,7 @@ public interface ICustomerService
     Task Save(Customer customer);
     Task Update(Guid id, Customer customer);
     Task Delete(Guid id);
-    IEnumerable<ConsumptionsByValue> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate);
+    Task<IEnumerable> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate);
 }
 
 

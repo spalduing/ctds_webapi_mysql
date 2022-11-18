@@ -12,6 +12,7 @@ public class CreateCustomerDTO
     public string Address {get;set;}
     [Required]
     public long Cellphone {get;set;}
+    public DateTime CreatedAt {get;set;}
 
 }
 

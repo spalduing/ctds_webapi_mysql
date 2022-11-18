@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
-using System.Globalization;
+using AutoMapper;
 
 namespace ctds_webapi.Services;
 
@@ -8,7 +8,7 @@ public class Detail_BillService : IDetail_BillService
 {
     OracleDBContext context;
 
-    public Detail_BillService(OracleDBContext dbContext)
+    public Detail_BillService(OracleDBContext dbContext )
     {
         context = dbContext;
     }
@@ -71,21 +71,41 @@ public class Detail_BillService : IDetail_BillService
 
     }
 
+    // public async Task<IEnumerable> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate)
+
     public BestSellerProduct BestSellerProduct(DateTime startDate, DateTime endDate)
     {
-        DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
-        var start_str = startDate.ToString("d", dtfi);
-        var end_str = endDate.ToString("d", dtfi);
+        var bestSellerProductQuery = context.Detail_Bills
+        .Where(res => res.CreatedAt >= startDate.Date && res.CreatedAt <= endDate.Date)
+        .GroupBy(res => new { res.Dish, res.CreatedAt })
+        .Select(res => new
+        {
+            res.Key.Dish,
+            res.Key.CreatedAt,
+            Amount = res.Select(x => x.Dish).Count(),
+            TotalBilled = res.Select(x => x.Value).Sum()
+        })
+        .OrderByDescending(x => x.TotalBilled)
+        .ToList();
 
-        Console.WriteLine(start_str);
-        Console.WriteLine(end_str);
+        var BEST_SELLER_PRODUCT = new BestSellerProduct();
+        BEST_SELLER_PRODUCT.Amount = bestSellerProductQuery.ElementAt(0).Amount;
+        BEST_SELLER_PRODUCT.CreatedAt = bestSellerProductQuery.ElementAt(0).CreatedAt;
+        BEST_SELLER_PRODUCT.Dish = bestSellerProductQuery.ElementAt(0).Dish;
+        BEST_SELLER_PRODUCT.TotalBilled = bestSellerProductQuery.ElementAt(0).TotalBilled;
 
-        var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" GROUP BY \"d\".\"Dish\" ORDER BY count(\"d\".\"Dish\") DESC;");
+        return BEST_SELLER_PRODUCT;
+
+        // DateTimeFormatInfo dtfi = CultureInfo.CreateSpecificCulture("ja-JP").DateTimeFormat;
+        // var start_str = startDate.ToString("d", dtfi);
+        // var end_str = endDate.ToString("d", dtfi);
+
+        // var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", \"d\".\"CreatedAt\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" GROUP BY \"d\".\"Dish\" ORDER BY count(\"d\".\"Dish\") DESC;");
         // var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", \"b\".\"CreatedAt\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled FROM \"Detail_Bill\" \"d\" INNER JOIN \"Bill\" \"b\" ON \"d\".\"BillId\" = \"b\".\"BillId\" GROUP BY \"d\".\"Dish\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')) ORDER BY count(\"d\".\"Dish\") DESC;");
 
         // var BEST_SELLER_PRODUCT = context.BestSellerProducts.FromSqlInterpolated($"SELECT \"d\".\"Dish\", count(\"d\".\"Dish\") AS Amount, sum(\"d\".\"Value\") AS TotalBilled, \"b\".\"CreatedAt\" FROM \"Detail_Bill\" \"d\" INNER JOIN \"Bill\" \"b\" ON \"d\".\"BillId\" = \"b\".\"BillId\" GROUP BY \"d\".\"Dish\", \"b\".\"CreatedAt\" HAVING (\"b\".\"CreatedAt\" >= TO_DATE({start_str}, 'YYYY/MM/DD') AND \"b\".\"CreatedAt\" <= TO_DATE({end_str},'YYYY/MM/DD')) ORDER BY count(\"d\".\"Dish\") DESC;");
         // SELECT "d"."Dish", "b"."CreatedAt", count("d"."Dish") AS Amount, sum("d"."Value") AS TotalBilled FROM "Detail_Bill" "d" INNER JOIN "Bill" "b" ON "d"."BillId" = "b"."BillId" GROUP BY "d"."Dish", "b"."CreatedAt" HAVING ("b"."CreatedAt" >= TO_DATE('2022/11/01', 'YYYY/MM/DD') AND "b"."CreatedAt" <= TO_DATE('2022/11/14','YYYY/MM/DD')) ORDER BY count("d"."Dish") DESC;
-        return BEST_SELLER_PRODUCT.ToList().ElementAt(0);
+        // return BEST_SELLER_PRODUCT.ToList().ElementAt(0);
     }
 }
 

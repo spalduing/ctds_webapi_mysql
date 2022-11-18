@@ -11,8 +11,8 @@ public class CreateWaiterDTO
     [Required]
     public int Age {get;set;}
     [Required]
-
     public Seniority Seniority {get;set;}
+    public DateTime CreatedAt {get;set;}
 
 }
 

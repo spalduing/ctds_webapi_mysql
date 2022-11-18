@@ -59,7 +59,8 @@ public class CustomersController : ControllerBase
     }
 
     [HttpGet("consumptions")]
-    public IActionResult Consumptions([FromQuery] double givenValue, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    // public IActionResult Consumptions([FromQuery] double givenValue, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    public async Task<IActionResult> Consumptions([FromQuery] double givenValue, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         try
         {
@@ -69,12 +70,12 @@ public class CustomersController : ControllerBase
             // IT RETURNS A DEFAULT RANGE FROM THE FIRST DAY OF THE CURRENT YEAR TO NOW
             if( string.IsNullOrEmpty(startQueryParam)  ||  string.IsNullOrEmpty(endQueryParam))
             {
-                Console.WriteLine("###NULL_FROM_CUSTOMERS_CONSUMTION");
             DateTime now = DateTime.Now;
             startDate = new DateTime(now.Year, 1, 1);
             endDate = new DateTime(now.Year, now.Month, now.Day);
             }
-            return Ok(customerService.CustomersConsumptions(givenValue, startDate, endDate));
+            var consumptions = await customerService.CustomersConsumptions(givenValue, startDate, endDate);
+            return Ok(consumptions);
         }
         catch (Exception ex)
         {
@@ -95,6 +96,7 @@ public class CustomersController : ControllerBase
                 return BadRequest(ModelState);
             }
             Customer customer = mapper.Map<Customer>(customerDTO);
+            Console.Write(customer);
             await customerService.Save(customer);
 
             return CreatedAtRoute(nameof(GetCustomer), new { id = customer.Id }, customer);

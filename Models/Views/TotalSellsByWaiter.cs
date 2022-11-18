@@ -5,5 +5,5 @@ public class TotalSellsByWaiter
 
     public double WaiterSells {get;set;}
 
-    // public DateTime CreatedAt {get;set;}
+    public DateTime CreatedAt {get;set;}
 }

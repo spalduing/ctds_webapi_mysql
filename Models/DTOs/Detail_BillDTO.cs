@@ -15,6 +15,7 @@ public class CreateDetail_BillDTO
 
     [Required]
     public double Value {get;set;}
+    public DateTime CreatedAt {get;set;}
 }
 
 public class UpdateDetail_BillDTO : CreateDetail_BillDTO

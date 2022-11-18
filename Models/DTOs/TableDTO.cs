@@ -10,6 +10,7 @@ public class CreateTableDTO
     public bool Reserved {get;set;}
     [Required]
     public int Stalls {get;set;}
+    public DateTime CreatedAt {get;set;}
 
 }
 
