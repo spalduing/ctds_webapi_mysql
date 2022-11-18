@@ -59,7 +59,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("allow_all");
+app.UseCors("allow_ctds_webapp");
 
 app.UseAuthorization();
 
