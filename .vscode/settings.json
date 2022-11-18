@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/adabd696-fe17-49c3-a315-70c7f5ef357e/AppServices/subscriptions/adabd696-fe17-49c3-a315-70c7f5ef357e/resourceGroups/appsvc_windows_centralus/providers/Microsoft.Web/sites/ctds-web-api-test",
+    "appService.deploySubpath": "publish"
+}
