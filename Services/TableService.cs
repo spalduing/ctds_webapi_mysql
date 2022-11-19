@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
 
 namespace ctds_webapi.Services;

@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
-using System.Globalization;
 using System.Collections;
 
 namespace ctds_webapi.Services;
@@ -66,6 +65,8 @@ public class WaiterService : IWaiterService
         await context.SaveChangesAsync();
     }
 
+    // IMPORTANT_COMMENT: QUERY WITH An ASYNC TASK APPROACH
+    // AND USING re.Select(x=>x.[GROUP].[GROUP].[PROP]).FirstOrDefault()
     public async Task<IEnumerable> TotalSells(DateTime startDate, DateTime endDate)
     {
         var waiters = context.Waiters;
@@ -74,15 +75,24 @@ public class WaiterService : IWaiterService
 
         var waitersConsumptionsQuery = await waiters
         .Join(bills, w => w.Id, b => b.WaiterId, (w, b) => new { w, b })
-        .Join(detailBills, bdb => bdb.b.BillId, dB => dB.BillId, (bdb, dB) => new { bdb, dB })
-        .Where(res => res.bdb.b.CreatedAt.Date >= startDate.Date && res.bdb.b.CreatedAt.Date <= endDate.Date)
-        .GroupBy(res => new { res.bdb.w.Name, res.bdb.w.LastName, res.bdb.b.CreatedAt })
-        .Select(res => new
+        .Where(res => res.b.CreatedAt.Date >= startDate.Date && res.b.CreatedAt.Date <= endDate.Date)
+        .GroupJoin(detailBills, bdb => bdb.b.BillId, dB => dB.BillId, (bdb, dB) => new { bdb, dB })
+        .SelectMany( x => x.dB.DefaultIfEmpty(),
+        (res,dB ) => new
         {
-            res.Key.Name,
-            res.Key.LastName,
-            res.Key.CreatedAt,
-            WaiterSells = res.Select(x => x.dB.Value).Sum()
+            Name = res.bdb.w.Name,
+            LastName = res.bdb.w.LastName,
+            CreatedAt = res.bdb.w.CreatedAt,
+            Value = dB == null ? 0.0 : dB.Value,
+        })
+        .GroupBy(x => new { x.Name, x.LastName, x.CreatedAt})
+        .Select(gres => new
+        TotalSellsByWaiter
+        {
+            Name= gres.Key.Name,
+            LastName= gres.Key.LastName,
+            CreatedAt= gres.Key.CreatedAt,
+            WaiterSells = gres.Select(x => x.Value).Sum()
         })
         .OrderByDescending(x => x.WaiterSells)
         .ToListAsync();

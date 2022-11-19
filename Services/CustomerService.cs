@@ -1,17 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ctds_webapi.Models;
-using System.Globalization;
-
-using System;
 using System.Data;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-// using System.Data.Objects;
-using System.Globalization;
-// using System.Data.EntityClient;
-using System.Data.SqlClient;
-using System.Data.Common;
 using System.Collections;
 
 namespace ctds_webapi.Services;
@@ -76,6 +65,8 @@ public class CustomerService : ICustomerService
         await context.SaveChangesAsync();
     }
 
+    // IMPORTANT_COMMENT: QUERY WITH An ASYNC TASK APPROACH
+    // AND USING res.Key.[PROP]
     public async Task<IEnumerable> CustomersConsumptions(double givenValue, DateTime startDate, DateTime endDate)
     {
         var customers = context.Customers;
@@ -87,11 +78,11 @@ public class CustomerService : ICustomerService
         .Join(detailBills, bdb => bdb.b.BillId, dB => dB.BillId, (bdb, dB) => new { bdb, dB })
         .Where(res => res.bdb.b.CreatedAt.Date >= startDate.Date && res.bdb.b.CreatedAt.Date <= endDate.Date)
         .GroupBy(res => new { res.bdb.c.Name, res.bdb.c.LastName, res.bdb.b.CreatedAt })
-        .Select(res => new
+        .Select(res => new ConsumptionsByValue
         {
-            res.Key.Name,
-            res.Key.LastName,
-            res.Key.CreatedAt,
+            Name = res.Key.Name,
+            LastName = res.Key.LastName,
+            CreatedAt= res.Key.CreatedAt,
             CustomerConsumption = res.Select(x => x.dB.Value).Sum()
         })
         .Where(res => res.CustomerConsumption >= givenValue )
