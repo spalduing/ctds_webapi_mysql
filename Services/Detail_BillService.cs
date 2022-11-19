@@ -7,7 +7,7 @@ public class Detail_BillService : IDetail_BillService
 {
     OracleDBContext context;
 
-    public Detail_BillService(OracleDBContext dbContext )
+    public Detail_BillService(OracleDBContext dbContext)
     {
         context = dbContext;
     }
@@ -84,11 +84,9 @@ public class Detail_BillService : IDetail_BillService
             TotalBilled = res.Select(x => x.Value).Sum()
         })
         .OrderByDescending(x => x.TotalBilled)
-        .ToList();
+        .FirstOrDefault();
 
-        var bestSellerProduct = bestSellerProductQuery.ElementAt(0);
-
-        return bestSellerProduct;
+        return bestSellerProductQuery;
     }
 }
 
